@@ -179,3 +179,49 @@ a:hover {
   font-size: 1.5rem;
   color: #9b4d6a;
 }
+
+.schedule-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin: 1.25rem 0;
+}
+
+.schedule-row {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  gap: 1rem;
+  align-items: center;
+}
+
+.schedule-day-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.schedule-times {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.schedule-times input[type='time'] {
+  width: auto;
+  padding: 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-size: 1rem;
+}
+
+.schedule-times input[type='time']:disabled {
+  opacity: 0.5;
+}
+
+@media (max-width: 640px) {
+  .schedule-row {
+    grid-template-columns: 1fr;
+  }
+}

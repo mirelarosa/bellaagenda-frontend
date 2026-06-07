@@ -25,3 +25,7 @@ export function confirmAppointment(id) {
 export function cancelAppointment(id) {
   return apiRequest(`/appointments/${id}/cancel`, { method: 'PATCH' });
 }
+
+export function completeAppointment(id) {
+  return apiRequest(`/appointments/${id}/complete`, { method: 'PATCH' });
+}

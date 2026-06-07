@@ -8,6 +8,10 @@ export function createProfessional(data) {
   return apiRequest('/professionals', { method: 'POST', body: JSON.stringify(data) });
 }
 
+export function getSchedule(id) {
+  return apiRequest(`/professionals/${id}/schedule`);
+}
+
 export function updateSchedule(id, slots) {
   return apiRequest(`/professionals/${id}/schedule`, {
     method: 'PUT',

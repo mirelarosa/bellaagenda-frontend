@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { listServices } from '../../api/services';
-import { listProfessionals } from '../../api/professionals';
+import { getSchedule, listProfessionals } from '../../api/professionals';
 import { getAvailability, createAppointment } from '../../api/appointments';
 import { createCheckout } from '../../api/payments';
+import { formatWorkingDays, getWeekdayFromDateStr } from '../../utils/schedule';
 
 export function BookAppointmentPage() {
   const location = useLocation();
@@ -14,11 +15,21 @@ export function BookAppointmentPage() {
   const [professionalId, setProfessionalId] = useState('');
   const [date, setDate] = useState('');
   const [selectedSlot, setSelectedSlot] = useState('');
+  const [workingDays, setWorkingDays] = useState([]);
+  const [workingDaysLoading, setWorkingDaysLoading] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [slotsLoading, setSlotsLoading] = useState(false);
 
+  const selectedService = services.find((s) => s.id === serviceId);
   const filtersReady = Boolean(professionalId && serviceId && date);
+  const today = new Date().toISOString().slice(0, 10);
+  const workingDaysText = formatWorkingDays(workingDays);
+  const dateWeekday = date ? getWeekdayFromDateStr(date) : null;
+  const professionalWorksOnDate =
+    !date ||
+    workingDays.length === 0 ||
+    workingDays.some((slot) => slot.weekday === dateWeekday);
 
   useEffect(() => {
     listServices().then(setServices);
@@ -27,9 +38,30 @@ export function BookAppointmentPage() {
 
   useEffect(() => {
     setSelectedSlot('');
+    setDate('');
+    if (!professionalId) {
+      setWorkingDays([]);
+      setWorkingDaysLoading(false);
+      return;
+    }
+    setWorkingDaysLoading(true);
+    getSchedule(professionalId)
+      .then(setWorkingDays)
+      .catch(() => setWorkingDays([]))
+      .finally(() => setWorkingDaysLoading(false));
+  }, [professionalId]);
+
+  useEffect(() => {
+    setSelectedSlot('');
     if (!filtersReady) {
       setSlots([]);
       setSlotsLoading(false);
+      return;
+    }
+    if (!professionalWorksOnDate) {
+      setSlots([]);
+      setSlotsLoading(false);
+      setError('Este profissional não atende neste dia da semana.');
       return;
     }
     setSlotsLoading(true);
@@ -41,7 +73,7 @@ export function BookAppointmentPage() {
         setError(e.message);
       })
       .finally(() => setSlotsLoading(false));
-  }, [professionalId, serviceId, date, filtersReady]);
+  }, [professionalId, serviceId, date, filtersReady, professionalWorksOnDate]);
 
   const handleBook = async (e) => {
     e.preventDefault();
@@ -100,6 +132,15 @@ export function BookAppointmentPage() {
               </option>
             ))}
           </select>
+          {professionalId && workingDaysLoading && <p>Carregando dias de atendimento...</p>}
+          {professionalId && !workingDaysLoading && workingDays.length > 0 && (
+            <p>Atende: {workingDaysText}</p>
+          )}
+          {professionalId && !workingDaysLoading && workingDays.length === 0 && (
+            <p className="error">
+              Este profissional ainda não configurou os horários de atendimento.
+            </p>
+          )}
         </div>
         <div className="form-group">
           <label htmlFor="date">Data</label>
@@ -107,7 +148,9 @@ export function BookAppointmentPage() {
             id="date"
             type="date"
             value={date}
+            min={today}
             onChange={(e) => setDate(e.target.value)}
+            disabled={!professionalId || workingDaysLoading || workingDays.length === 0}
             required
           />
         </div>
@@ -135,8 +178,11 @@ export function BookAppointmentPage() {
               </select>
             ) : (
               <p className="error">
-                Nenhum horário disponível nesta data. Escolha outra data, outro profissional ou
-                peça ao profissional para configurar a agenda em Disponibilidade.
+                Nenhum horário disponível nesta data
+                {selectedService ? ` para um serviço de ${selectedService.durationMinutes} minutos` : ''}.
+                {date === today
+                  ? ' Os horários de hoje já passaram ou não há tempo suficiente até o fim do expediente.'
+                  : ' Escolha outra data ou outro profissional.'}
               </p>
             )}
           </div>

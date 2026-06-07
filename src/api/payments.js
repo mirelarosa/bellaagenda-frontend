@@ -6,3 +6,10 @@ export function createCheckout(appointmentId) {
     body: JSON.stringify({ appointmentId })
   });
 }
+
+export function syncPayment(sessionId) {
+  return apiRequest('/payments/sync', {
+    method: 'POST',
+    body: JSON.stringify({ sessionId })
+  });
+}
